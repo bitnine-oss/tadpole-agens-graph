@@ -16,21 +16,24 @@
 package com.bitnine.tadpole.graph.core.editor.extension.browserHandler;
 
 /**
- * editor browser function 정의 
+ * editor browser function 정의
  * 
  * @author hangum
+ * 
+ * /com.bitnine.tadpole.graph.core/resources/graph/js/tadpoleAgensGraph.js 와 동일하게 정의되어야 한다.
+ * 그래프 뷰어와 올챙이이의 이벤트 헨들러를 정의한다.
  *
  */
-public interface CypherEditorFunction  {
+public interface CypherEditorFunction {
 	/**
 	 * save option
 	 */
-	public static final int LOAD_DATA				= 1;
-	public static final int SAVE_OPTIONS				= 5;
-    
+	public static final int LOAD_DATA = 1;
+	public static final int SAVE_OPTIONS = 5;
+
 	/**
 	 * spatial browser browser handle name
 	 */
-    public static final String GRAPH_SERVICE_HANDLER = "TadpoleBrowserHandler";
-    
+	public static final String GRAPH_SERVICE_HANDLER = "TadpoleBrowserHandler";
+
 }

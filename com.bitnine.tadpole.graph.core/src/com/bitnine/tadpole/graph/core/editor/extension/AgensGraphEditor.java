@@ -3,9 +3,9 @@ package com.bitnine.tadpole.graph.core.editor.extension;
 import java.util.Map;
 
 import net.bitnine.agensgraph.graph.Edge;
+import net.bitnine.agensgraph.graph.Path;
 import net.bitnine.agensgraph.graph.Vertex;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
@@ -16,6 +16,14 @@ import org.eclipse.swt.widgets.Composite;
 
 import com.bitnine.tadpole.graph.core.editor.extension.browserHandler.CypherEditorFunction;
 import com.bitnine.tadpole.graph.core.editor.extension.browserHandler.CypherFunctionService;
+import com.bitnine.tadpole.graph.core.editor.extension.rurunki_eye.Metadata;
+import com.bitnine.tadpole.graph.core.editor.extension.rurunki_eye.RunkiEyeGraph;
+import com.bitnine.tadpole.graph.core.editor.extension.rurunki_eye.RurukiEdge;
+import com.bitnine.tadpole.graph.core.editor.extension.rurunki_eye.RurukiNode;
+import com.bitnine.tadpole.graph.core.editor.extension.sigma.AgensUtils;
+import com.bitnine.tadpole.graph.core.editor.extension.sigma.GEdge;
+import com.bitnine.tadpole.graph.core.editor.extension.sigma.Node;
+import com.bitnine.tadpole.graph.core.editor.extension.sigma.SigmaGraph;
 import com.google.gson.Gson;
 import com.hangum.tadpole.commons.libs.core.define.SystemDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
@@ -37,6 +45,8 @@ public class AgensGraphEditor extends AMainEditorExtension {
 	protected Browser browserGraph;
 	/** browser.browserFunction의 서비스 헨들러 */
 	protected BrowserFunction editorService;
+
+	protected UserDBDAO userDB;
 
 	/**
 	 * @wbp.parser.entryPoint
@@ -73,7 +83,7 @@ public class AgensGraphEditor extends AMainEditorExtension {
 			super.setEnableExtension(false);
 			return;
 		}
-
+		this.userDB = userDB;
 		super.initExtension(userDB);
 		super.setEnableExtension(true);
 	}
@@ -86,9 +96,10 @@ public class AgensGraphEditor extends AMainEditorExtension {
 	private void initUI() {
 		try {
 			browserGraph.setUrl("/resources/graph/TadpoleAgensGraph.html" + DUMY_DATA);
+			// 올챙이(java)와 그래프브라우져(js)간의 통신을 위한 이벤트 헨들러 등록.
 			registerBrowserFunctions();
 		} catch (Exception e) {
-			logger.error("initialize map initialize error", e);
+			logger.error("initialize graph browser error", e);
 		}
 	}
 
@@ -98,11 +109,10 @@ public class AgensGraphEditor extends AMainEditorExtension {
 	@Override
 	public String sqlCostume(String strSQL) {
 
-		//		Cypher 쿼리가 있다면 영역을 넓혀준다.
+		//	Cypher 쿼리결과를 표시한 그래프 브라우져 영역을 확장하여 표시한다.
 		try {
 			super.setEnableExtension(true);
 
-			// 컬럼이 있다면 mainEditor의 화면중에, 지도 부분의 영역을 30%만큼 조절합니다.
 			mainEditor.getSashFormExtension().getDisplay().asyncExec(new Runnable() {
 				public void run() {
 					int[] intWidgetSizes = mainEditor.getSashFormExtension().getWeights();
@@ -119,12 +129,11 @@ public class AgensGraphEditor extends AMainEditorExtension {
 	}
 
 	/**
-	 * register browser function
-	 * 
+	 * register browser function js, java간 통신을 위한 이벤트 헨들러(함수)등록.
 	 */
 	protected void registerBrowserFunctions() {
 		try {
-			editorService = new CypherFunctionService(browserGraph, CypherEditorFunction.GRAPH_SERVICE_HANDLER);
+			editorService = new CypherFunctionService(browserGraph, userDB, CypherEditorFunction.GRAPH_SERVICE_HANDLER);
 		} catch (Exception e) {
 			logger.error(e);
 		}
@@ -132,95 +141,170 @@ public class AgensGraphEditor extends AMainEditorExtension {
 
 	@Override
 	public void resultSetClick(int selectIndex, Map<Integer, Object> mapColumns) {
-		logger.debug("===> 쿼리 결과를 클릭했다..");
+		if (logger.isDebugEnabled())
+			logger.debug("===> 쿼리 결과를 클릭했다..");
 	}
 
 	@Override
 	public void resultSetDoubleClick(int selectIndex, Map<Integer, Object> mapColumns) {
-		logger.debug("===> 쿼리 결과를 더블클릭했다..");
+		if (logger.isDebugEnabled())
+			logger.debug("===> 쿼리 결과를 더블클릭했다..");
 	}
 
 	@Override
 	public void queryEndedExecute(QueryExecuteResultDTO rsDAO) {
-		logger.debug("===> 쿼리 결과를 끝냈다.");
+		if (logger.isDebugEnabled())
+			logger.debug("===> 쿼리 결과를 끝냈다.");
 
-		browserGraph.evaluate("clearAllLayersMap();");
-
-		drawGraphData(rsDAO, "");
+		if (rsDAO.getDataList() != null) {
+			//drawGraphWithSigma(rsDAO, "");
+			drawGraphWithRurunkiEye(rsDAO, "");
+		}
 
 	}
 
-	private void drawGraphData(final QueryExecuteResultDTO rsDAO, final String strUserOptions) {
+	/**
+	 * RurunkiEye.js 라이브러리를 이용해서 그래프를 그릴때 사용한다.
+	 * 
+	 * @param rsDAO
+	 * @param strUserOptions
+	 */
+	private void drawGraphWithRurunkiEye(final QueryExecuteResultDTO rsDAO, final String strUserOptions) {
 		browserGraph.getDisplay().syncExec(new Runnable() {
 			@Override
 			public void run() {
 
-				AgensGraph graph = new AgensGraph();
-				Node node = null;
-				GEdge edge = null;
+				String baseNodeID = "0";
+				RunkiEyeGraph graph = new RunkiEyeGraph();
+				RurukiNode node = null;
+				RurukiEdge rurukiEdge = null;
+				Path path = null;
 
 				for (Map<Integer, Object> column : rsDAO.getDataList().getData()) {
 
 					for (int i = 0; i < column.size(); i++) {
 
-						logger.debug("Column Size is " + column.size() + "");
-
 						Object obj = column.get(i);
+						if (obj instanceof Vertex) {
+							node = new RurukiNode();
+							Vertex vertex = (Vertex) obj;
+							node.setId(vertex.getVertexId().getOid() + "." + vertex.getVertexId().getId());
+							node.setLabel(vertex.getLabel());
+							node.setProperties(vertex.getProperty().toMap());
+							node.setMetadata(new Metadata(0, 0));
 
-						logger.debug("Object is " + obj.toString() + ", " + obj.getClass().toString());
+							graph.addVertex(node);
+						} else if (obj instanceof Edge) {
 
+							rurukiEdge = new RurukiEdge();
+							Edge relation = (Edge) obj;
+							rurukiEdge.setId(relation.getEdgeId().getOid() + "." + relation.getEdgeId().getId());
+							rurukiEdge.setLabel(relation.getLabel());
+							rurukiEdge.setHeadId(relation.getStartVertexId().getOid() + "." + relation.getStartVertexId().getId());
+							rurukiEdge.setTailId(relation.getEndVertexid().getOid() + "." + relation.getEndVertexid().getId());
+							rurukiEdge.setProperties(relation.getProperty().toMap());
+
+							graph.addEdge(rurukiEdge);
+						} else if (obj instanceof Path) {
+
+							path = (Path) obj;
+
+							for (Edge relation : path.edges()) {
+
+								rurukiEdge = new RurukiEdge();
+
+								rurukiEdge.setId(relation.getEdgeId().getOid() + "." + relation.getEdgeId().getId());
+								rurukiEdge.setLabel(relation.getLabel());
+								rurukiEdge.setHeadId(relation.getStartVertexId().getOid() + "." + relation.getStartVertexId().getId());
+								rurukiEdge.setTailId(relation.getEndVertexid().getOid() + "." + relation.getEndVertexid().getId());
+								rurukiEdge.setProperties(relation.getProperty().toMap());
+
+								graph.addEdge(rurukiEdge);
+
+							}
+
+							if (logger.isDebugEnabled())
+								logger.error("path start " + path.start());
+							if (logger.isDebugEnabled())
+								logger.error("path length " + String.valueOf(path.length()));
+							for (Vertex vertex : path.vertexs()) {
+								node = new RurukiNode();
+								node.setId(vertex.getVertexId().getOid() + "." + vertex.getVertexId().getId());
+								node.setLabel(vertex.getLabel());
+								node.setProperties(vertex.getProperty().toMap());
+								node.setMetadata(new Metadata(0, 0));
+
+								graph.addVertex(node);
+							}
+
+						} else {
+							logger.error("Unknow Class " + obj.getClass().toString());
+						}
+					}
+				}
+
+				graph.autoLoadbyEdges(userDB);
+
+				graph.calcInOutEdgeCount();
+
+				browserGraph.evaluate(String.format("drawingGraphData('%s', '%s');", graph.toJSONString(), graph.getBaseNodeID(baseNodeID)));
+
+			}
+		});
+	}
+
+	/**
+	 * Sigma.js라이브러리를 이용한 그래프 표시.
+	 * 
+	 * @param rsDAO
+	 * @param strUserOptions
+	 */
+	private void drawGraphWithSigma(final QueryExecuteResultDTO rsDAO, final String strUserOptions) {
+		browserGraph.getDisplay().syncExec(new Runnable() {
+			@Override
+			public void run() {
+
+				SigmaGraph graph = new SigmaGraph();
+				Node node = null;
+				GEdge edge = null;
+				long row = 0;
+				double parentAngle = 0;
+				double angleDeg = 0;
+				double nx = 0;
+				double ny = 0;
+
+				for (Map<Integer, Object> column : rsDAO.getDataList().getData()) {
+					row++;
+					for (int i = 0; i < column.size(); i++) {
+						Object obj = column.get(i);
 						if (obj instanceof Vertex) {
 							node = new Node();
 
 							Vertex vertex = (Vertex) obj;
-							String getValue = vertex.getValue();
-							getValue = StringUtils.replace(getValue, vertex.getLabel(), "");
-							getValue = StringUtils.replace(getValue, "][", ",");
-							getValue = StringUtils.replace(getValue, "[", ",");
-							getValue = StringUtils.replace(getValue, "]", ",");
-							String[] ids = StringUtils.split(getValue, ",");
+							node.setLabel(vertex.getLabel());
+							angleDeg = (((360 / rsDAO.getDataList().getData().size()) * (i * row)));
+							nx = Math.random() + (100 * Math.cos((angleDeg * (Math.PI / 180)) - parentAngle));
+							ny = Math.random() + (100 * Math.sin((angleDeg * (Math.PI / 180)) - parentAngle));
+							node.setX(nx);
+							node.setY(ny);
 
-							node.setId(ids[0]);
-							String label = vertex.getProperty().getString("name");
-							if (StringUtils.isBlank(label)) {
-								node.setLabel(vertex.getLabel() + "_" + node.getId());
-							} else {
-								node.setLabel(label);
-							}
-
-							node.setX(Math.random() * 0.8);
-							node.setY(Math.random() * 0.8);
-						
 							node.setColor(AgensUtils.getRandomRGB());
 							node.setSize(500);
 							graph.addNode(node);
-
-							System.out.println("Vertex is " + vertex.toString());
-						}
-						if (obj instanceof Edge) {
-
+						} else if (obj instanceof Edge) {
 							edge = new GEdge();
-
 							Edge relation = (Edge) obj;
-
-							String getValue = relation.getValue();
-							getValue = StringUtils.replace(getValue, relation.getLabel(), "");
-							getValue = StringUtils.replace(getValue, "][", ",");
-							getValue = StringUtils.replace(getValue, "[", ",");
-							getValue = StringUtils.replace(getValue, "]", ",");
-							
-							String[] ids = StringUtils.split(getValue, ",");
-							edge.setId(ids[0]);
+							edge.setId(relation.getEdgeId().getOid() + "." + relation.getEdgeId().getId());
 							edge.setLabel(relation.getLabel());
-							edge.setSource(ids[1]);
-							edge.setTarget(ids[2]);
-							
+							edge.setSource(relation.getStartVertexId().getOid() + "." + relation.getStartVertexId().getId());
+							edge.setTarget(relation.getEndVertexid().getOid() + "." + relation.getEndVertexid().getId());
+							edge.setType("arrow");//'line', 'curve', 'arrow', 'curvedArrow'
 							edge.setColor(AgensUtils.getRandomRGB("100"));
 							edge.setSize(0.5);
 
-							logger.debug("Relation is " + relation.toString() + ", edge is " + edge.toString());
-
 							graph.addEdge(edge);
+						} else {
+							logger.error("Unknow Class " + obj.getClass().toString());
 						}
 					}
 				}
@@ -228,7 +312,9 @@ public class AgensGraphEditor extends AMainEditorExtension {
 				Gson gson = new Gson();
 				String strGraphJson = gson.toJson(graph);
 
-				logger.debug("##### Graph ####====>" + strGraphJson);
+				if (logger.isDebugEnabled())
+					logger.debug("##### Graph ####====>" + strGraphJson);
+
 				browserGraph.evaluate(String.format("drawingGraphData('%s');", strGraphJson));
 
 			}

@@ -1,5 +1,6 @@
 /*
  * define java browfunction code
+ * com.bitnine.tadpole.graph.core.editor.extension.browserHandler.CypherEditorFunction 과 동일하게 정의되어야 한다.
  */
 var editorService = {
 	/** save option */
@@ -9,173 +10,129 @@ var editorService = {
 
 $(document).ready(onLoad);
 
-/**
- * save option
- * 
- * @param options
- */
-function saveOption() {
-	console.log('******************saveOption()************************');
-	try {
-		TadpoleBrowserHandler(editorService.SAVE_OPTION, JSON.stringify(options));
-    } catch(e) {
-		console.log(e);
-	}
-}
-
 /*
  * initial event
  */
-var tadpole_sigma;
-var tadpole_graph;
 function onLoad() {
 	console.log('******************onLoad()************************');
 	try {
-		tadpole_graph = {
-			      nodes: [],
-			      edges: []
-			    };
 		
-		tadpole_sigma = new sigma({
-		  graph: tadpole_graph,
-		  renderer: {
-		    container: document.getElementById('graph-container'),
-		    type: 'canvas'
-		  },
-		  settings: {
-		    edgeLabelSize: 'proportional'
-		  }
-		});
+		
 	} catch (err) {
 		console.log(err);
 	}
 }
 
-function drawingGraphData(txtGraphJSON, txtUserOption) {
-	console.log('******************drawingGraphData************************');
-	try {	
-		tadpole_sigma.refresh();
+// 노드를 더블클릭한 경우 엣지와 관련 노드를 추가로 조회하여 표시한다.
+function loadNodeExpandData(option, selectNode) {
+	console.log('******************loadNodeExpandData()************************');
+	try {
+		var nodeStr = JSON.stringify(selectNode);
+		return TadpoleBrowserHandler(option, nodeStr);
+    } catch(e) {
+		console.log(e);
+		return "{}";
+	}
+}
 
-		sigma.parsers.jsonData(txtGraphJSON, tadpole_sigma, updateGraph);
+// 올챙이의 쿼리 결과에 노드와 엣지가 있을경우 그래프 뷰어에 표시한다.
+function drawingGraphData(txtGraphJSON, baseNodeID) {
+	console.log('******************drawingGraphData************************');
+	try {
+		//clear;
+		$('#ruruki-eye')[0].innerHTML = '';
 		
+		new RurukiEye({
+            data: JSON.parse(txtGraphJSON),
+            centerId: baseNodeID,
+            container: '#ruruki-eye',
+            help: false,
+            controlPanel: true,
+            infoPanel: true,
+            cssUrl: "css/ruruki-eye.css"
+        });
+
+	} catch (err) {
+		console.log(err);
+	}
+};
+
+// 기존 노드와 엣지를 그대로 유지하고 새로 조회된 노드와 엣지를 추가하여 표시한다.
+function appendGraphData(txtGraphJSON, txtUserOption) {
+	console.log('******************appendGraphData************************');
+	try {	
+		sigma.parsers.jsonAppendData(txtGraphJSON, tadpole_sigma, updateGraph);
 	} catch (err) {
 		console.log(err);
 	}
 	tadpole_sigma.refresh();
 };
 
+// 노드가 추가되면 노드에 드래그 이벤트를 할당한다.
 function updateGraph(sig, g){
 
 	try {
 		// Initialize the dragNodes plugin:
 		var dragListener = sigma.plugins.dragNodes(sig, sig.renderers[0]);
 		
-		dragListener.bind('startdrag', function(event) {
-		  console.log(event);
-		});
-		dragListener.bind('drag', function(event) {
-		  console.log(event);
-		});
-		dragListener.bind('drop', function(event) {
-		  console.log(event);
-		});
-		dragListener.bind('dragend', function(event) {
-		  console.log(event);
-		});
+		//dragListener.bind('startdrag', function(event) {		  console.log(event);		});
+		//dragListener.bind('drag', function(event) {		  console.log(event);		});
+		//dragListener.bind('drop', function(event) {		  console.log(event);		});
+		//dragListener.bind('dragend', function(event) {		  console.log(event);		});
+		
+		
+		//sig.bind('overNode outNode clickNode doubleClickNode rightClickNode', function(e) {			  console.log(e.type, e.data.node, e.data.captor); });
+		//sig.bind('doubleClickNode', function(e) {			console.log(e.type, e.data.node, e.data.captor);		});
+		//sig.bind('overEdge outEdge clickEdge doubleClickEdge rightClickEdge', function(e) {			  console.log(e.type, e.data.edge, e.data.captor);			});
+		//sig.bind('clickStage', function(e) {			  console.log(e.type, e.data.captor);			});
+		//sig.bind('doubleClickStage rightClickStage', function(e) {			  console.log(e.type, e.data.captor);			});
+		
+		
+		
 		
 		
 	} catch (err) {
 		console.log(err);
 	}
 	
-	sig.refresh();
-
-
-}
-
-/*
-* clear map
-*/
-function clearAllLayersMap() {
-	console.log('******************clearAllLayersMap************************');
 	try {
-		//resultLayer.clearLayers();
-		//selectedLayer.clearLayers();
-	} catch(err) {
-		console.log("Rise exception(clearAllLayersMap function) : " + err);
-	}
-};
-
-/*
-* clear selected object
-*/
-function clearClickedLayersMap() {
-	console.log('******************clearClickedLayersMap************************');
-	try {
-		selectedLayer.clearLayers();
-	} catch(err) {
-		console.log("Rise exception(cleareClickedLayersMap function) : " + err);
-	}
-};
-
-
-function agensDataLoad(command, callback) {
-	console.log('******************agensDataLoad************************');
-	try {
-		return TadpoleBrowserHandler(editorService.LOAD_DATA, JSON.stringify(command), callback);
-    } catch(e) {
-		console.log(e);
-	}
-}
-
-
-function agensDataLoadCallback(returnData) {
-	console.log('******************agensDataLoadCallback************************');
-	try {
-		var result = JSON.parse(returnData);
-		console.log('수신결과:' + result);
+	
+		var fa = sig.layouts.configForceLink(s, {
+			  worker: true,
+			  barnesHutOptimize: false,
+			  autoStop: true,
+			  background: true,
+			  easing: 'cubicInOut',
+			  alignNodeSiblings: true,
+			  nodeSiblingsScale: 1,
+			  nodeSiblingsAngleMin: 0.3
+			});
+	
+		// Bind the events:
+		fa.bind('start interpolate stop', function(e) {
+		  console.log(e.type);
+		  var el = document.getElementById('notice');
+		  if (e.type === 'start') {
+		    el.className = '';
+		  }
+		  else if (e.type === 'interpolate') {
+		    el.className = 'hidden';
+		  }
+		});
+	
+		// Start the ForceLink algorithm:
+		sig.layouts.startForceLink();
+			
 	} catch (err) {
 		console.log(err);
 	}
+
+	
+	sig.refresh();
 }
 
 
 
 
-/**
-* add map data
-*
-* @param geoJSON initial map data
-*/
-function drawMapAddData(txtGeoJSON) {
-	console.log('******************drawMapAddData************************');
-	try {
-		var geoJSON = jQuery.parseJSON(txtGeoJSON);
-		resultLayer.addData(geoJSON);
-		if (options.autoZoom)
-			map.fitBounds(resultLayer.getBounds());
-	} catch(err) {
-		console.log(err);
-	}
-};
 
-/**
-* click event
-*/
-function onClickPoint(txtGeoJSON, txtToopTip) {
-	console.log('******************onClickPoint************************');
-	try {
-		/* console.log("==> geojsonFeature: \n" + geoJSON ); */
-		var geoJSON = jQuery.parseJSON(txtGeoJSON);
-		selectedLayer.addData(geoJSON);
-		bounds = L.geoJson(geoJSON).getBounds();
-		map.fitBounds(bounds);
-		if (bounds.getSouthWest() == bounds.getNorthEast()) { // 점인 경우 약간 축소 처리
-			map.setZoom(map.getMaxZoom() - 2);
-		}
-		
-		if(txtToopTip != "") selectedLayer.bindPopup(txtToopTip).openPopup();
-	} catch(err) {
-		console.log(err);
-	}
-};
+
