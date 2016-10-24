@@ -105,6 +105,20 @@ body {
   stroke-dasharray: 4, 2;
   stroke-opacity: 1;
   animation: dashing 5s linear infinite; }
+  
+.edge-text {
+  font: 10px OpenSansLight;
+  pointer-events: none;
+  user-select: none;
+  stroke-opacity: .5;
+  -webkit-user-select: none;
+  -moz-user-select: none; }
+
+.edge-text.highlighted {
+  font: 10px OpenSansLight;
+  stroke: black;
+  stroke-opacity: .8;
+  z-index: 100; }
 
 @keyframes blinker {
   0% {

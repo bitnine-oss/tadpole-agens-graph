@@ -183,6 +183,9 @@ public class RunkiEyeGraph extends RurunkiEye {
 		int maxNodeCount = 0;
 		try {
 			for (RurukiNode rurukiNode : this.getVertices()) {
+				// 맨처음 노드를 기본노드로 설정한다.
+				if (maxNodeCount == 0) baseNodeID = rurukiNode.getId();
+				
 				if (maxNodeCount < rurukiNode.getMetadata().getOutEdgeCount()) {
 					maxNodeCount = rurukiNode.getMetadata().getOutEdgeCount();
 					baseNodeID = rurukiNode.getId();

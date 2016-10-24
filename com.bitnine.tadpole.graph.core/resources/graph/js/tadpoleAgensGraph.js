@@ -49,7 +49,9 @@ function drawingGraphData(txtGraphJSON, baseNodeID) {
             help: false,
             controlPanel: true,
             infoPanel: true,
-            cssUrl: "css/ruruki-eye.css"
+            cssUrl: "css/ruruki-eye.css",
+            wheel_zoom: true,
+            isBounded: false
         });
 
 	} catch (err) {

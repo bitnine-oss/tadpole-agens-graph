@@ -721,11 +721,11 @@ var RurukiEye = function(config) {
 
     var processedData = processData(config.data, undefined, {id: baseNodeId});
     var customFilters = {};
-    var graphIsBounded = true;
+    var graphIsBounded = config.isBounded;
 
     var width = parentElement.width();
     var height = parentElement.height();
-
+    
     var force = d3.layout.force()
         .nodes(d3.values(processedData.vertices.raw))
         .links(d3.values(processedData.edges.raw))
@@ -738,9 +738,28 @@ var RurukiEye = function(config) {
         .gravity(0)
         .on('tick', tick)
         .start();
+    
+    
 
+    //var drag = force.drag().on('dragstart', pinNode);
+    // Disable event propagation on drag to avoid zoom and pan issues
     var drag = force.drag()
-        .on('dragstart', pinNode);
+        .on("dragstart", function (d) {
+            d3.event.sourceEvent.stopPropagation();
+            
+            if (config.pin === false) return;
+
+            if (d.id === baseNodeId && d.clean === true) {
+                delete d.clean;
+            }
+
+            if (d) {
+              d3.select(this).classed('fixed', d.fixed = true);
+            }
+        })
+        .on("dragend", function (d) {
+            d3.event.sourceEvent.stopPropagation();
+        });
 
     var svg = d3.select(parentElementSelector).append('div')
         .classed('ruruki-main', true)
@@ -759,10 +778,46 @@ var RurukiEye = function(config) {
     var links = force.links();
     var text = svg.append('g').selectAll('text');
     var edge = svg.append('g').selectAll('path');
+    var edgeLabel = svg.append('g').selectAll('path');
     var vertex = svg.append('g').selectAll('circle');
     var info = $('.ruruki-info.info');
-    var detail = $('.ruruki-info.detail')
-        .text('');
+    var detail = $('.ruruki-info.detail').text('');
+    
+    var zoom = d3.behavior.zoom().scaleExtent([0.1, 10]);
+    
+    var rescale = function () {
+        var trans = d3.event.translate,
+            scale = d3.event.scale;
+
+        svg.selectAll('g').attr("transform","translate(" + trans + ")" + " scale(" + scale + ")");
+        //svg.selectAll('g').selectAll('path').attr("transform","translate(" + trans + ")" + " scale(" + scale + ")");
+        //svg.selectAll('g').selectAll('circle').attr("transform","translate(" + trans + ")" + " scale(" + scale + ")");
+    };
+    
+    var resetzoom = function () {
+    	svg.selectAll('g').on("wheel.zoom", null)
+        .on("mousewheel.zoom", null);
+    }
+    
+
+    //svg.on("dblclick.zoom", null).attr("class", "ppt-svg-graph");
+
+    if (config.wheel_zoom) {
+    	svg.call(zoom.on("zoom", rescale));
+    	
+    	svg.on("dblclick.zoom", null);
+    	//svg.on("wheel.zoom", null);
+    	svg.on("dragstart", null);
+    	//svg.on("dragstart", resetzoom);
+    	//svg.selectAll('g').on("dragstart", null);
+    	//svg.selectAll('g').selectAll('circle').call(drag);
+    }else{
+        // Disable mouse wheel events.
+    	svg.selectAll('g').on("wheel.zoom", null)
+            .on("mousewheel.zoom", null);
+    }
+
+
 
     fixSize();
     redrawGraph();
@@ -790,6 +845,7 @@ var RurukiEye = function(config) {
     function redrawGraph() {
         text = text.data(nodes);
         edge = edge.data(links);
+        edgeLabel = edge.data(links);
         vertex = vertex.data(nodes);
 
         svg.append('defs').selectAll('marker')
@@ -856,6 +912,28 @@ var RurukiEye = function(config) {
             .on('contextmenu', unpinNode)
             .call(drag);
 
+        edgeLabel.enter()
+	        .append('text')
+	        .attr('id', function(d) { return 'text-edge-' + d.id; })
+            .attr('class', function(d) { return 'edge-text ' + d.label; })
+	        .attr('x', function(d) {
+	        	try{
+	        		if((x.source.x) && (d.target.x)){
+	        			return Math.abs(d.source.x - d.target.x) / 3 + 10;
+	        		}else{
+	        			return 20;
+	        		}
+	        	}catch(error){
+	        		return 20;
+	        	}
+	        	})
+	        .attr('dy', '-0.15em')
+	        .on('mouseover', mouseOverEdge)
+	        .on('mouseout', mouseOut)
+	        .append("textPath")
+	        .attr("xlink:href",function(d) { return '#edge-' + d.id; })
+	        .text(function(d) { return d.label; });
+    
         updateInfo();
     }
 
@@ -1291,8 +1369,8 @@ var RurukiEye = function(config) {
                     )
                 );
             });
-        } else {
-            vertex.attr('transform', translate);
+        } else {      	
+           vertex.attr('transform', translate);
         }
 
         text.attr('transform', translate);
@@ -1308,6 +1386,19 @@ var RurukiEye = function(config) {
 
             return "M" + d.source.x + "," + d.source.y + "L" +
                 (d.target.x - offsetX) + "," + (d.target.y - offsetY);
+        });
+        
+        edgeLabel.attr("x", function(d) {
+        	// edge-text의 x좌표 게산.
+        	var textWidth = 5;
+            diffX = d.target.x - d.source.x;
+            diffY = d.target.y - d.source.y;
+
+            pathLength = Math.sqrt(Math.pow(diffX, 2) + Math.pow(diffY, 2));  
+            
+            try{textWidth = this.getComputedTextLength() / 2;}catch(e){};
+
+            return pathLength / 2 - textWidth;
         });
     }
 
@@ -1326,14 +1417,14 @@ var RurukiEye = function(config) {
      * Translates element to pre-calculated X and Y positions.
      */
     function translate(d) {
-        if (d.id == baseNodeId && d.clean === true) {
+    	if (d.id == baseNodeId && d.clean === true) {
             d.x = width / 2;
             d.y = height / 2;
         }
 
         return 'translate(' + d.x + ',' + d.y + ')';
     }
-
+    
     /**
      * Pins node to screen (simulation will no longer force it's position).
      */
@@ -1354,8 +1445,10 @@ var RurukiEye = function(config) {
      * moment on).
      */
     function unpinNode(d) {
+    	/* 기본 시스템메뉴 사용불가처러. */
         d3.event.preventDefault();
-
+        
+        
         if (config.pin === false) return;
 
         if (d.id === baseNodeId && d.clean === true) {
@@ -1386,6 +1479,9 @@ var RurukiEye = function(config) {
     function mouseOverEdge(d) {
         if (d.isVisible !== true) { return; }
 
+        svg.selectAll('.edge-text').classed('highlighted', function(p) {
+            return p === d;
+        });
         svg.selectAll('.edge').classed('highlighted', function(p) {
             return p === d;
         });
@@ -1518,6 +1614,18 @@ var RurukiEye = function(config) {
         d3.selectAll('.edge').attr('opacity', function(d) {
             return (d.isVisible === true ? 1 : 0);
         });
+        
+        //edge에 연결된 레이블의 숨기/표시.
+        d3.selectAll('.edge').forEach(function(obj) {
+        	obj.forEach(function(d){
+        		$("text[id='text-" + d.id + "']").attr('opacity', d.attributes.opacity.value );
+        	});
+        });
+        
+        
+        
+
+        
     }
 
     /**
@@ -1655,11 +1763,21 @@ var RurukiEye = function(config) {
             affectedEdges,
             'edges deleted'
         );
-
+        
+        // shift + double click
         text = text.data(nodes);
         edge = edge.data(links);
         vertex = vertex.data(nodes);
 
+        try{
+        	/* delete relation edge text */
+        	edge.exit()[0].forEach(function(obj) {
+            	$("text[id='text-" + obj.id + "']").remove();
+            });
+        }catch(error){
+        	console.log(error);
+        }
+        
         text.exit().remove();
         edge.exit().remove();
         vertex.exit().remove();

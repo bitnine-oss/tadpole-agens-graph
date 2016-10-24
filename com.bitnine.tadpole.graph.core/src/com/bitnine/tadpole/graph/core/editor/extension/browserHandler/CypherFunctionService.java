@@ -154,9 +154,9 @@ public class CypherFunctionService extends BrowserFunction {
 						}
 
 						if (logger.isDebugEnabled())
-							logger.error("path start " + path.start());
+							logger.debug("path start " + path.start());
 						if (logger.isDebugEnabled())
-							logger.error("path length " + String.valueOf(path.length()));
+							logger.debug("path length " + String.valueOf(path.length()));
 						for (Vertex vertex : path.vertexs()) {
 							node = new RurukiNode();
 							node.setId(vertex.getVertexId().getOid() + "." + vertex.getVertexId().getId());
@@ -167,7 +167,8 @@ public class CypherFunctionService extends BrowserFunction {
 							graph.addVertex(node);
 						}
 					} else {
-						logger.error("Unknow Class " + obj.getClass().toString());
+						if (logger.isDebugEnabled())
+							logger.debug("Unknow Class " + obj.getClass().toString());
 					}
 				}
 			}
@@ -273,7 +274,8 @@ public class CypherFunctionService extends BrowserFunction {
 
 						graph.addEdge(edge);
 					} else {
-						logger.error("Unknow Class " + obj.getClass().toString());
+						if (logger.isDebugEnabled())
+							logger.debug("Unknow Class " + obj.getClass().toString());
 					}
 				}
 			}
