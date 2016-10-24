@@ -74,25 +74,7 @@ function appendGraphData(txtGraphJSON, txtUserOption) {
 function updateGraph(sig, g){
 
 	try {
-		// Initialize the dragNodes plugin:
 		var dragListener = sigma.plugins.dragNodes(sig, sig.renderers[0]);
-		
-		//dragListener.bind('startdrag', function(event) {		  console.log(event);		});
-		//dragListener.bind('drag', function(event) {		  console.log(event);		});
-		//dragListener.bind('drop', function(event) {		  console.log(event);		});
-		//dragListener.bind('dragend', function(event) {		  console.log(event);		});
-		
-		
-		//sig.bind('overNode outNode clickNode doubleClickNode rightClickNode', function(e) {			  console.log(e.type, e.data.node, e.data.captor); });
-		//sig.bind('doubleClickNode', function(e) {			console.log(e.type, e.data.node, e.data.captor);		});
-		//sig.bind('overEdge outEdge clickEdge doubleClickEdge rightClickEdge', function(e) {			  console.log(e.type, e.data.edge, e.data.captor);			});
-		//sig.bind('clickStage', function(e) {			  console.log(e.type, e.data.captor);			});
-		//sig.bind('doubleClickStage rightClickStage', function(e) {			  console.log(e.type, e.data.captor);			});
-		
-		
-		
-		
-		
 	} catch (err) {
 		console.log(err);
 	}
@@ -128,7 +110,6 @@ function updateGraph(sig, g){
 	} catch (err) {
 		console.log(err);
 	}
-
 	
 	sig.refresh();
 }

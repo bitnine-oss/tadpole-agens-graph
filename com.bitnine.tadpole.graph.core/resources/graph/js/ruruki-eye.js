@@ -1338,6 +1338,8 @@ var RurukiEye = function(config) {
             nodes.length + '</i> vertices'
         );
     }
+    
+
 
     /**
      * Called after every iteration of the simulation. Great place to
@@ -1418,11 +1420,11 @@ var RurukiEye = function(config) {
      */
     function translate(d) {
     	if (d.id == baseNodeId && d.clean === true) {
-            d.x = width / 2;
+        	d.x = width / 2;
             d.y = height / 2;
-        }
-
-        return 'translate(' + d.x + ',' + d.y + ')';
+    	}
+    	
+        return 'translate(' + d.x + ',' + d.y+ ')';
     }
     
     /**
