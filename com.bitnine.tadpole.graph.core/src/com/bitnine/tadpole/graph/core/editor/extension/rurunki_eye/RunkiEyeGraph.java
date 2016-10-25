@@ -186,8 +186,11 @@ public class RunkiEyeGraph extends RurunkiEye {
 				// 맨처음 노드를 기본노드로 설정한다.
 				if (maxNodeCount == 0) baseNodeID = rurukiNode.getId();
 				
-				if (maxNodeCount < rurukiNode.getMetadata().getOutEdgeCount()) {
+				if (maxNodeCount < rurukiNode.getMetadata().getOutEdgeCount() ) {
 					maxNodeCount = rurukiNode.getMetadata().getOutEdgeCount();
+					baseNodeID = rurukiNode.getId();
+				}else if ( maxNodeCount < rurukiNode.getMetadata().getInEdgeCount()) {
+					maxNodeCount = rurukiNode.getMetadata().getInEdgeCount();
 					baseNodeID = rurukiNode.getId();
 				}
 			}
