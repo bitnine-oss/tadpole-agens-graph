@@ -100,7 +100,7 @@ public class CypherFunctionService extends BrowserFunction {
 
 			SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 
-			String reqQuery = "match (n)<-[r]->(p) where id(n) = '" + jsonNode.get("id").asString() + "' or id(p) = '" + jsonNode.get("id").asString() + "' return n, r, p";
+			String reqQuery = "match (n)-[r]->(p) where id(n) = '" + jsonNode.get("id").asString() + "' return n, r, p UNION match (n)-[r]->(p) where id(p) = '" + jsonNode.get("id").asString() + "' return n, r, p";
 			if (logger.isDebugEnabled())
 				logger.debug("Execute Math CQL : " + reqQuery);
 
@@ -217,7 +217,7 @@ public class CypherFunctionService extends BrowserFunction {
 
 			SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 
-			String reqQuery = "match (n)<-[r]->(p) where id(n) = '" + jsonNode.get("id").asString() + "' or id(p) = '" + jsonNode.get("id").asString() + "' return n, r, p";
+			String reqQuery = "match (n)-[r]->(p) where id(n) = '" + jsonNode.get("id").asString() + "' return n, r, p UNION match (n)-[r]->(p) where id(p) = '" + jsonNode.get("id").asString() + "' return n, r, p";
 			if (logger.isDebugEnabled())
 				logger.debug("Execute Math CQL : " + reqQuery);
 
