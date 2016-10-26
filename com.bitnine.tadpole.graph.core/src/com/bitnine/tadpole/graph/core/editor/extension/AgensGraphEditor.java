@@ -179,6 +179,7 @@ public class AgensGraphEditor extends AMainEditorExtension {
 				RurukiNode node = null;
 				RurukiEdge rurukiEdge = null;
 				Path path = null;
+				int display_cnt = 0;
 
 				for (Map<Integer, Object> column : rsDAO.getDataList().getData()) {
 
@@ -194,6 +195,7 @@ public class AgensGraphEditor extends AMainEditorExtension {
 							node.setMetadata(new Metadata(0, 0));
 
 							graph.addVertex(node);
+							display_cnt++;
 						} else if (obj instanceof Edge) {
 
 							rurukiEdge = new RurukiEdge();
@@ -205,6 +207,7 @@ public class AgensGraphEditor extends AMainEditorExtension {
 							rurukiEdge.setProperties(relation.getProperty().toMap());
 
 							graph.addEdge(rurukiEdge);
+							display_cnt++;
 						} else if (obj instanceof Path) {
 
 							path = (Path) obj;
@@ -220,7 +223,7 @@ public class AgensGraphEditor extends AMainEditorExtension {
 								rurukiEdge.setProperties(relation.getProperty().toMap());
 
 								graph.addEdge(rurukiEdge);
-
+								display_cnt++;
 							}
 
 							if (logger.isDebugEnabled())
@@ -235,6 +238,7 @@ public class AgensGraphEditor extends AMainEditorExtension {
 								node.setMetadata(new Metadata(0, 0));
 
 								graph.addVertex(node);
+								display_cnt++;
 							}
 
 						} else {
@@ -242,6 +246,8 @@ public class AgensGraphEditor extends AMainEditorExtension {
 								logger.debug("Unknow Class " + obj.getClass().toString());
 						}
 					}
+					if (display_cnt > 100)
+						break;
 				}
 
 				graph.autoLoadbyEdges(userDB);
