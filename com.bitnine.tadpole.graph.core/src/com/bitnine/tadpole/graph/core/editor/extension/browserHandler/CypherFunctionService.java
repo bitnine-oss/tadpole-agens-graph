@@ -124,7 +124,7 @@ public class CypherFunctionService extends BrowserFunction {
 						node.setId(vertex.getVertexId().getOid() + "." + vertex.getVertexId().getId());
 						node.setLabel(vertex.getLabel());
 						node.setProperties(vertex.getProperty().toMap());
-						node.setMetadata(new Metadata(0, 0));
+						node.setMetadata(new Metadata(0, 0, vertex));
 						graph.addVertex(node);
 					} else if (obj instanceof Edge) {
 						rurukiEdge = new RurukiEdge();
@@ -162,7 +162,7 @@ public class CypherFunctionService extends BrowserFunction {
 							node.setId(vertex.getVertexId().getOid() + "." + vertex.getVertexId().getId());
 							node.setLabel(vertex.getLabel());
 							node.setProperties(vertex.getProperty().toMap());
-							node.setMetadata(new Metadata(0, 0));
+							node.setMetadata(new Metadata(0, 0, vertex));
 
 							graph.addVertex(node);
 						}

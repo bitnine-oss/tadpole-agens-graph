@@ -145,7 +145,7 @@ public class RunkiEyeGraph extends RurunkiEye {
 					node.setId(vertex.getVertexId().getOid() + "." + vertex.getVertexId().getId());
 					node.setLabel(vertex.getLabel());
 					node.setProperties(vertex.getProperty().toMap());
-					node.setMetadata(new Metadata(0, 0));
+					node.setMetadata(new Metadata(0, 0, vertex ));
 					this.addVertex(node);
 				}
 			}

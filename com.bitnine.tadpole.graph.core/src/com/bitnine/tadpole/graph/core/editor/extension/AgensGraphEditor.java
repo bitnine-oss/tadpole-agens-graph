@@ -6,6 +6,7 @@ import net.bitnine.agensgraph.graph.Edge;
 import net.bitnine.agensgraph.graph.Path;
 import net.bitnine.agensgraph.graph.Vertex;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
@@ -192,7 +193,7 @@ public class AgensGraphEditor extends AMainEditorExtension {
 							node.setId(vertex.getVertexId().getOid() + "." + vertex.getVertexId().getId());
 							node.setLabel(vertex.getLabel());
 							node.setProperties(vertex.getProperty().toMap());
-							node.setMetadata(new Metadata(0, 0));
+							node.setMetadata(new Metadata(0, 0, vertex));
 
 							graph.addVertex(node);
 							display_cnt++;
@@ -235,7 +236,7 @@ public class AgensGraphEditor extends AMainEditorExtension {
 								node.setId(vertex.getVertexId().getOid() + "." + vertex.getVertexId().getId());
 								node.setLabel(vertex.getLabel());
 								node.setProperties(vertex.getProperty().toMap());
-								node.setMetadata(new Metadata(0, 0));
+								node.setMetadata(new Metadata(0, 0, vertex));
 
 								graph.addVertex(node);
 								display_cnt++;

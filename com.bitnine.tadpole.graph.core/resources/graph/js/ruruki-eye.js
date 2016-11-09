@@ -204,7 +204,12 @@ function processData(data, preData, parentVertex) {
             return;
         }
 
-        var name = each.properties.name || each.id;
+        var name = '';
+        if (each.metadata.name_key){
+        	name = eval('each.properties.'+each.metadata.name_key) || each.id;
+        }else{
+        	name = each.id;
+        }
 
         verticesById[each.id] = {
             type: 'vertex',
