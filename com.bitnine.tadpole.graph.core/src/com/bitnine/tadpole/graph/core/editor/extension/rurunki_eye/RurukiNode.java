@@ -1,11 +1,13 @@
 
 package com.bitnine.tadpole.graph.core.editor.extension.rurunki_eye;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Generated;
 
-import net.bitnine.agensgraph.graph.property.JsonObject;
+import net.bitnine.agensgraph.graph.property.JsonArray;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -119,7 +121,21 @@ public class RurukiNode {
      * @param properties
      *     The properties
      */
-    public void setProperties(Map properties) {
+    public void setProperties(Map<String,Object> properties) {
+    	
+    	for (String key: properties.keySet()){
+			if ((properties.get(key) instanceof JsonArray)){
+				
+				JsonArray arr = (JsonArray)properties.get(key);
+				List<String> list = new ArrayList<String>();
+				for(int i = 0; i < arr.size() ; i++){
+				    list.add(arr.getString(i));
+				}
+				
+				properties.put(key, list.toString());
+			}
+		}
+    	
         this.properties = properties;
     }
 
